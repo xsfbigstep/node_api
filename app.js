@@ -8,6 +8,8 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
 var chargingRouter = require('./routes/charging/index'); // 充电桩项目api
+var wxRouter = require('./routes/wx/index'); // 微信公众号项目api
+var wechat = require('./lib/wx/wechat'); // 微信公众号项目 鉴权相关方法封装
 
 
 var app = express();
@@ -26,6 +28,20 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// 批量注册 微信公众号项目的所有api
+// 获取微信accessToken, 【服务器一启动就会调用】
+wechat.getAccessToken().then(token => {
+  global.accessToken = token
+})
+
+app.use(wechat.init)
+for (const key in wxRouter) {
+  if (Object.hasOwnProperty.call(wxRouter, key)) {
+    const wxR = wxRouter[key];
+    app.use('/wx', wxR);
+  }
+}
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
